@@ -18,7 +18,7 @@ import java.lang.IllegalArgumentException
 
 /**
  * Create an input pointer view to be used on the specified display
- * (displays other than the the default display work on API level >= 32)
+ * (displays other than the default display work on API level >= 32)
  * with the given RGB colour.
  */
 @SuppressLint("ViewConstructor")
