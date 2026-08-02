@@ -79,10 +79,10 @@ public class InputService extends AccessibilityService {
 		GestureDescription.StrokeDescription stroke;
 		long lastGestureStartTime;
 		GestureCallback gestureCallback = new GestureCallback();
-		boolean withPointer;
-		float pointerRed;
-		float pointerGreen;
-		float pointerBlue;
+		private final boolean withPointer;
+		private final float pointerRed;
+		private final float pointerGreen;
+		private final float pointerBlue;
 		InputPointerView pointerView;
 		// keyboard-related
 		boolean isKeyCtrlDown;
@@ -92,6 +92,18 @@ public class InputService extends AccessibilityService {
 		boolean isKeyEscDown;
 
 		private int displayId;
+
+		InputContext(float red, float green, float blue) {
+			withPointer = true;
+			pointerRed = red;
+			pointerGreen = green;
+			pointerBlue = blue;
+		}
+
+		InputContext() {
+			withPointer = false;
+			pointerRed = pointerGreen = pointerBlue = 0;
+		}
 
 		int getDisplayId() {return displayId;}
 
@@ -297,17 +309,16 @@ public class InputService extends AccessibilityService {
 		// NB runs on a worker thread!
 		try {
 			int displayId = Display.DEFAULT_DISPLAY;
-			InputContext inputContext = new InputContext();
-			inputContext.setDisplayId(displayId);
-			inputContext.withPointer = withPointer;
+			InputContext inputContext;
 			if(withPointer) {
+				int inputContextsSize = inputContexts.size();
+				inputContext = new InputContext(0.4f * ((inputContextsSize + 1) % 3), 0.2f * ((inputContextsSize + 1) % 5),  1.0f * ((inputContextsSize + 1) % 2));
 				// run this on UI thread (use main handler as view is not yet added)
-                int inputContextsSize = inputContexts.size();
-				inputContext.pointerRed = 0.4f * ((inputContextsSize + 1) % 3);
-				inputContext.pointerGreen = 0.2f * ((inputContextsSize + 1) % 5);
-				inputContext.pointerBlue = 1.0f * ((inputContextsSize + 1) % 2);
 				instance.mMainHandler.post(inputContext::addPointerView);
+			} else {
+				inputContext = new InputContext();
 			}
+			inputContext.setDisplayId(displayId);
 			inputContexts.put(client, inputContext);
 		} catch (Exception e) {
 			Log.e(TAG, "addClient: " + e);
