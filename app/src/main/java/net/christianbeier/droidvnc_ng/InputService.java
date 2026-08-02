@@ -79,6 +79,10 @@ public class InputService extends AccessibilityService {
 		GestureDescription.StrokeDescription stroke;
 		long lastGestureStartTime;
 		GestureCallback gestureCallback = new GestureCallback();
+		boolean withPointer;
+		float pointerRed;
+		float pointerGreen;
+		float pointerBlue;
 		InputPointerView pointerView;
 		// keyboard-related
 		boolean isKeyCtrlDown;
@@ -99,16 +103,57 @@ public class InputService extends AccessibilityService {
 			this.displayId = displayId;
 			// and if there is a pointer, recreate it with the new display id
 			if(pointerView != null) {
-				pointerView.removeView();
-				pointerView = new InputPointerView(
-						instance,
-						displayId,
-						pointerView.getRed(),
-						pointerView.getGreen(),
-						pointerView.getBlue()
-				);
-				pointerView.addView();
+				removePointerView();
+				addPointerView();
 			}
+		}
+
+		/**
+		 * Creates a new InputPointerView if there is none with {@link #instance} as Context
+		 * and adds it to the window manager and this InputContext.
+		 */
+		void addPointerView() {
+			if (!withPointer || pointerView != null || instance == null) {
+				return;
+			}
+			pointerView = new InputPointerView(
+					instance,
+					displayId,
+					pointerRed,
+					pointerGreen,
+					pointerBlue
+			);
+			pointerView.addView();
+		}
+
+		/**
+		 * Removes InputPointerView from the window manager and this InputContext.
+		 */
+		void removePointerView() {
+			if (pointerView != null) {
+				pointerView.removeView();
+				pointerView = null;
+			}
+		}
+
+		/**
+		 * Resets all transient state that should not survive service re-creation.
+		 * Called when the service is connected or destroyed to clear stale input state.
+		 */
+		void resetState() {
+			// Button/key state
+			isButtonOneDown = false;
+			isKeyCtrlDown = false;
+			isKeyAltDown = false;
+			isKeyShiftDown = false;
+			isKeyDelDown = false;
+			isKeyEscDown = false;
+
+			// Gesture state
+			path.reset();
+			stroke = null;
+			lastGestureStartTime = 0;
+			gestureCallback = new GestureCallback();
 		}
 	}
 
@@ -128,7 +173,7 @@ public class InputService extends AccessibilityService {
 
 	private Handler mMainHandler;
 
-	private final Map<Long, InputContext> mInputContexts = new ConcurrentHashMap<>();
+	private static final Map<Long, InputContext> inputContexts = new ConcurrentHashMap<>();
 	/**
 	 * System keyboard input foci, display-specific starting on Android 10 (really 11 in higher layers),
 	 * see <a href="https://source.android.com/docs/core/display/multi_display/displays#focus">Android docs</a>
@@ -186,12 +231,22 @@ public class InputService extends AccessibilityService {
 		isInputEnabled = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Constants.PREFS_KEY_INPUT_LAST_ENABLED, !new Defaults(this).getViewOnly());
 		scaling = PreferenceManager.getDefaultSharedPreferences(this).getFloat(Constants.PREFS_KEY_SERVER_LAST_SCALING, new Defaults(this).getScaling());
 		mMainHandler = new Handler(instance.getMainLooper());
+		// (re-)add any InputContext's InputPointerViews
+		for (InputContext inputContext : inputContexts.values()) {
+			inputContext.resetState();
+			mMainHandler.post(inputContext::addPointerView);
+		}
 		Log.i(TAG, "onServiceConnected");
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		// remove InputPointerViews, they are no use without the InputService
+		for (InputContext inputContext : inputContexts.values()) {
+			inputContext.resetState();
+			mMainHandler.post(inputContext::removePointerView);
+		}
 		instance = null;
 		Log.i(TAG, "onDestroy");
 	}
@@ -244,21 +299,16 @@ public class InputService extends AccessibilityService {
 			int displayId = Display.DEFAULT_DISPLAY;
 			InputContext inputContext = new InputContext();
 			inputContext.setDisplayId(displayId);
+			inputContext.withPointer = withPointer;
 			if(withPointer) {
 				// run this on UI thread (use main handler as view is not yet added)
-                int inputContextsSize = instance.mInputContexts.size();
-                instance.mMainHandler.post(() -> {
-                    inputContext.pointerView = new InputPointerView(
-                            instance,
-                            displayId,
-                            0.4f * ((inputContextsSize + 1) % 3),
-                            0.2f * ((inputContextsSize + 1) % 5),
-                            1.0f * ((inputContextsSize + 1) % 2)
-                    );
-                    inputContext.pointerView.addView();
-               });
+                int inputContextsSize = inputContexts.size();
+				inputContext.pointerRed = 0.4f * ((inputContextsSize + 1) % 3);
+				inputContext.pointerGreen = 0.2f * ((inputContextsSize + 1) % 5);
+				inputContext.pointerBlue = 1.0f * ((inputContextsSize + 1) % 2);
+				instance.mMainHandler.post(inputContext::addPointerView);
 			}
-			instance.mInputContexts.put(client, inputContext);
+			inputContexts.put(client, inputContext);
 		} catch (Exception e) {
 			Log.e(TAG, "addClient: " + e);
 		}
@@ -268,12 +318,12 @@ public class InputService extends AccessibilityService {
 	public static void removeClient(long client) {
 		// NB runs on a worker thread!
 		try {
-			InputContext inputContext = instance.mInputContexts.get(client);
+			InputContext inputContext = inputContexts.get(client);
 			if(inputContext != null && inputContext.pointerView != null) {
 				// run this on UI thread
-				inputContext.pointerView.post(inputContext.pointerView::removeView);
+				inputContext.pointerView.post(inputContext::removePointerView);
 			}
-			instance.mInputContexts.remove(client);
+			inputContexts.remove(client);
 		} catch (Exception e) {
 			Log.e(TAG, "removeClient: " + e);
 		}
@@ -288,7 +338,7 @@ public class InputService extends AccessibilityService {
 		}
 
 		try {
-			InputContext inputContext = instance.mInputContexts.get(client);
+			InputContext inputContext = inputContexts.get(client);
 
 			if(inputContext == null) {
 				throw new IllegalStateException("Client " + client + " was not added or is already removed");
@@ -372,7 +422,7 @@ public class InputService extends AccessibilityService {
         }
 
 		try {
-			InputContext inputContext = instance.mInputContexts.get(client);
+			InputContext inputContext = inputContexts.get(client);
 
 			if(inputContext == null) {
 				throw new IllegalStateException("Client " + client + " was not added or is already removed");
