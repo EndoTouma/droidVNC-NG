@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId "net.christianbeier.droidvnc_ng"
         minSdk 24
-        targetSdk 35
+        targetSdk 36
         versionCode 62
         versionName "2.20.2"
 
