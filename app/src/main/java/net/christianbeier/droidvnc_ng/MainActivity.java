@@ -1208,7 +1208,11 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra(MainService.EXTRA_ACCESS_KEY, prefs.getString(Constants.PREFS_KEY_SETTINGS_ACCESS_KEY, mDefaults.getAccessKey()));
                 intent.putExtra(MainService.EXTRA_RECEIVER, getPackageName());
 
-                ContextCompat.startForegroundService(MainActivity.this, intent);
+                try {
+                    ContextCompat.startForegroundService(MainActivity.this, intent);
+                } catch (Exception e) {
+                    Log.e(TAG, "Could not get client list", e);
+                }
 
                 mClientListHandler.postDelayed(this, 1000);
             }
