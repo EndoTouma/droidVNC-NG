@@ -14,6 +14,7 @@ import android.view.Display
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.UiThread
 import java.lang.IllegalArgumentException
 
 /**
@@ -104,6 +105,7 @@ class InputPointerView(
     /**
      * Add input pointer view to display specified in constructor.
      */
+    @UiThread
     fun addView() {
         try {
             // attach to display
@@ -117,6 +119,7 @@ class InputPointerView(
     /**
      * Remove input pointer view from display specified in constructor.
      */
+    @UiThread
     fun removeView() {
         windowManager.removeView(this)
     }
@@ -124,6 +127,7 @@ class InputPointerView(
     /**
      * Position input pointer view on display specified in constructor.
      */
+    @UiThread
     fun positionView(x: Int, y: Int) {
         layoutParams.x = x
         layoutParams.y = y
