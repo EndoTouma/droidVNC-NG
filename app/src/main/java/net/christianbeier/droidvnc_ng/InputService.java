@@ -41,6 +41,7 @@ import android.view.accessibility.AccessibilityWindowInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.preference.PreferenceManager;
 
@@ -91,7 +92,7 @@ public class InputService extends AccessibilityService {
 		boolean isKeyDelDown;
 		boolean isKeyEscDown;
 
-		private int displayId;
+		private int displayId = Display.DEFAULT_DISPLAY;
 
 		InputContext(float red, float green, float blue) {
 			withPointer = true;
@@ -124,6 +125,7 @@ public class InputService extends AccessibilityService {
 		 * Creates a new InputPointerView if there is none with {@link #instance} as Context
 		 * and adds it to the window manager and this InputContext.
 		 */
+		@UiThread
 		void addPointerView() {
 			if (!withPointer || pointerView != null || instance == null) {
 				return;
@@ -141,6 +143,7 @@ public class InputService extends AccessibilityService {
 		/**
 		 * Removes InputPointerView from the window manager and this InputContext.
 		 */
+		@UiThread
 		void removePointerView() {
 			if (pointerView != null) {
 				pointerView.removeView();
@@ -318,7 +321,6 @@ public class InputService extends AccessibilityService {
 			} else {
 				inputContext = new InputContext();
 			}
-			inputContext.setDisplayId(displayId);
 			inputContexts.put(client, inputContext);
 		} catch (Exception e) {
 			Log.e(TAG, "addClient: " + e);
