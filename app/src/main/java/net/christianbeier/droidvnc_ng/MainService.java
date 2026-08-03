@@ -798,13 +798,14 @@ public class MainService extends Service {
         Log.d(TAG, "onClientDisconnected: client " + client);
 
         try {
+            InputService.removeClient(client);
+
             instance.mWakeLock.release();
             Utils.withLock(instance.mConnectedClientsLock.writeLock(), () -> instance.mConnectedClients.remove(client));
             if(!instance.mIsStopping) {
                 // don't show notifications when clients are disconnected on orderly server shutdown
                 instance.updateNotification(false);
             }
-            InputService.removeClient(client);
 
             // check if the gone client was part of a reconnect entry
             instance.mOutboundClientsToReconnect
