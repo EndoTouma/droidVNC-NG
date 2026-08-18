@@ -39,6 +39,7 @@ import android.graphics.Path;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.UiThread;
@@ -344,6 +345,7 @@ public class InputService extends AccessibilityService {
 
 	@SuppressWarnings("unused")
     @WorkerThread
+	@Keep
 	public static void onPointerEvent(int buttonMask, int x, int y, long client) {
 
 		if(!isInputEnabled) {
@@ -424,6 +426,7 @@ public class InputService extends AccessibilityService {
 	}
 
     @WorkerThread
+	@Keep
 	public static void onKeyEvent(int down, long keysym, long client) {
 
 		if(!isInputEnabled) {
@@ -960,6 +963,7 @@ public class InputService extends AccessibilityService {
 	}
 
     @WorkerThread
+	@Keep
 	public static void onCutText(String text, long client) {
 
 		if(!isInputEnabled) {
