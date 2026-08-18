@@ -48,6 +48,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.ContextCompat;
@@ -767,6 +768,7 @@ public class MainService extends Service {
     @SuppressLint("WakelockTimeout")
     @SuppressWarnings("unused")
     @WorkerThread
+    @Keep
     static void onClientConnected(long client) {
         Log.d(TAG, "onClientConnected: client " + client);
 
@@ -794,6 +796,7 @@ public class MainService extends Service {
 
     @SuppressWarnings("unused")
     @WorkerThread
+    @Keep
     static void onClientDisconnected(long client) {
         Log.d(TAG, "onClientDisconnected: client " + client);
 
