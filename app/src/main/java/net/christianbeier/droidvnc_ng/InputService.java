@@ -449,6 +449,23 @@ public class InputService extends AccessibilityService {
 			}
 
 			/*
+				Normalize NumLock-off numpad navigation keys to their plain equivalents for
+				both API >= 34 handling and the pre-34 path.
+				Android has no distinct KeyEvent.KEYCODE_NUMPAD_* for these (unlike the
+				numpad digits), so no information is lost by this remapping.
+			 */
+			if (keysym == 0xff95) keysym = 0xff50; // KP_Home      -> Home
+			if (keysym == 0xff96) keysym = 0xff51; // KP_Left      -> Left
+			if (keysym == 0xff97) keysym = 0xff52; // KP_Up        -> Up
+			if (keysym == 0xff98) keysym = 0xff53; // KP_Right     -> Right
+			if (keysym == 0xff99) keysym = 0xff54; // KP_Down      -> Down
+			if (keysym == 0xff9a) keysym = 0xff55; // KP_Page_Up   -> Page_Up
+			if (keysym == 0xff9b) keysym = 0xff56; // KP_Page_Down -> Page_Down
+			if (keysym == 0xff9c) keysym = 0xff57; // KP_End       -> End
+			if (keysym == 0xff9e) keysym = 0xff63; // KP_Insert    -> Insert
+			if (keysym == 0xff9f) keysym = 0xffff; // KP_Delete    -> Delete
+
+			/*
 				Save states of some keys for combo handling.
 			 */
 			if(keysym == 0xFFE3)
@@ -546,6 +563,8 @@ public class InputService extends AccessibilityService {
 					//  Up/Down
 					if (keysym == 0xff52) keyCode = KeyEvent.KEYCODE_DPAD_UP;
 					if (keysym == 0xff54) keyCode = KeyEvent.KEYCODE_DPAD_DOWN;
+					// KP_Begin (numpad 5 w/ NumLock off)
+					if (keysym == 0xff9d) keyCode = KeyEvent.KEYCODE_DPAD_CENTER;
 					// Backspace/Delete
 					if (keysym == 0xff08) keyCode = KeyEvent.KEYCODE_DEL;
 					if (keysym == 0xffff) keyCode = KeyEvent.KEYCODE_FORWARD_DEL;
@@ -576,24 +595,28 @@ public class InputService extends AccessibilityService {
 					if (keysym == 0xffc7) keyCode = KeyEvent.KEYCODE_F10;
 					if (keysym == 0xffc8) keyCode = KeyEvent.KEYCODE_F11;
 					if (keysym == 0xffc9) keyCode = KeyEvent.KEYCODE_F12;
-					// Numpad keys
+					/*
+						Numpad input. The doNumlock flag only needs to be set for
+					    XK_KP_0 - XK_KP_9 and XK_KP_Decimal.
+					 */
+					boolean doNumLock = false;
 					if (keysym == 0xff8d) keyCode = KeyEvent.KEYCODE_NUMPAD_ENTER;
 					if (keysym == 0xffaa) keyCode = KeyEvent.KEYCODE_NUMPAD_MULTIPLY;
 					if (keysym == 0xffab) keyCode = KeyEvent.KEYCODE_NUMPAD_ADD;
 					if (keysym == 0xffac) keyCode = KeyEvent.KEYCODE_NUMPAD_COMMA;
 					if (keysym == 0xffad) keyCode = KeyEvent.KEYCODE_NUMPAD_SUBTRACT;
-					if (keysym == 0xffae) keyCode = KeyEvent.KEYCODE_NUMPAD_DOT;
+					if (keysym == 0xffae) { keyCode = KeyEvent.KEYCODE_NUMPAD_DOT; doNumLock = true; }
 					if (keysym == 0xffaf) keyCode = KeyEvent.KEYCODE_NUMPAD_DIVIDE;
-					if (keysym == 0xffb0) keyCode = KeyEvent.KEYCODE_NUMPAD_0;
-					if (keysym == 0xffb1) keyCode = KeyEvent.KEYCODE_NUMPAD_1;
-					if (keysym == 0xffb2) keyCode = KeyEvent.KEYCODE_NUMPAD_2;
-					if (keysym == 0xffb3) keyCode = KeyEvent.KEYCODE_NUMPAD_3;
-					if (keysym == 0xffb4) keyCode = KeyEvent.KEYCODE_NUMPAD_4;
-					if (keysym == 0xffb5) keyCode = KeyEvent.KEYCODE_NUMPAD_5;
-					if (keysym == 0xffb6) keyCode = KeyEvent.KEYCODE_NUMPAD_6;
-					if (keysym == 0xffb7) keyCode = KeyEvent.KEYCODE_NUMPAD_7;
-					if (keysym == 0xffb8) keyCode = KeyEvent.KEYCODE_NUMPAD_8;
-					if (keysym == 0xffb9) keyCode = KeyEvent.KEYCODE_NUMPAD_9;
+					if (keysym == 0xffb0) { keyCode = KeyEvent.KEYCODE_NUMPAD_0; doNumLock = true; }
+					if (keysym == 0xffb1) { keyCode = KeyEvent.KEYCODE_NUMPAD_1; doNumLock = true; }
+					if (keysym == 0xffb2) { keyCode = KeyEvent.KEYCODE_NUMPAD_2; doNumLock = true; }
+					if (keysym == 0xffb3) { keyCode = KeyEvent.KEYCODE_NUMPAD_3; doNumLock = true; }
+					if (keysym == 0xffb4) { keyCode = KeyEvent.KEYCODE_NUMPAD_4; doNumLock = true; }
+					if (keysym == 0xffb5) { keyCode = KeyEvent.KEYCODE_NUMPAD_5; doNumLock = true; }
+					if (keysym == 0xffb6) { keyCode = KeyEvent.KEYCODE_NUMPAD_6; doNumLock = true; }
+					if (keysym == 0xffb7) { keyCode = KeyEvent.KEYCODE_NUMPAD_7; doNumLock = true; }
+					if (keysym == 0xffb8) { keyCode = KeyEvent.KEYCODE_NUMPAD_8; doNumLock = true; }
+					if (keysym == 0xffb9) { keyCode = KeyEvent.KEYCODE_NUMPAD_9; doNumLock = true; }
 
 					/*
 					    ASCII input, we use a translation to KeyEvents w/ keycodes as some apps
@@ -708,7 +731,8 @@ public class InputService extends AccessibilityService {
 							0,
 							(inputContext.isKeyAltDown ? KeyEvent.META_ALT_ON : 0) |
 									(inputContext.isKeyCtrlDown ? KeyEvent.META_CTRL_ON : 0) |
-									(doShift ? KeyEvent.META_SHIFT_ON : 0)
+									(doShift ? KeyEvent.META_SHIFT_ON : 0) |
+									(doNumLock ? KeyEvent.META_NUM_LOCK_ON : 0)
 					);
 
 					/*
@@ -823,6 +847,14 @@ public class InputService extends AccessibilityService {
             }
 
             /*
+                XK_KP_Begin (numpad 5 w/ NumLock off)
+             */
+            if (keysym == 0xff9d && down != 0 && Build.VERSION.SDK_INT >= 33) {
+                Log.i(TAG, "onKeyEvent: got KP_Begin");
+                instance.performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_CENTER);
+            }
+
+            /*
                 Tab
             */
             if (keysym == 0xff09 && down != 0) {
@@ -893,7 +925,7 @@ public class InputService extends AccessibilityService {
 			}
 
 			/*
-			    Enter, doing ACTION_IME_ENTER or ACTION_CLICK or GLOBAL_ACTION_DPAD_CENTER
+			    XK_Return or XK_KP_Enter, doing ACTION_IME_ENTER or ACTION_CLICK or GLOBAL_ACTION_DPAD_CENTER
 			 */
 			if ((keysym == 0xff0d || keysym == 0xff8d) && down != 0) {
 				Bundle action = new Bundle();
