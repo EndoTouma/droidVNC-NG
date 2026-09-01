@@ -1,9 +1,9 @@
 /*
  * DroidVNC-NG RFB keysym -> Unicode translation for text entry.
  *
- * Author: Christian Beier <info@christianbeier.net>
+ * Author: Evgenii Vervai <delspin1@gmail.com>
  *
- * Copyright (C) 2023 Kitchen Armor.
+ * Copyright (C) 2026 Evgenii Vervai.
  *
  * You can redistribute and/or modify this program under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -23,9 +23,6 @@ package net.christianbeier.droidvnc_ng
 
 /**
  * Translates RFB keysyms into Unicode code points for text entry.
- *
- * Kept out of InputService so the (large) legacy Cyrillic keysym table does not
- * bloat that class.
  */
 object InputKeysymToUnicode {
 
