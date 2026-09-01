@@ -47,6 +47,7 @@ import androidx.annotation.WorkerThread;
 import androidx.preference.PreferenceManager;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -195,6 +196,126 @@ public class InputService extends AccessibilityService {
 	 * see <a href="https://source.android.com/docs/core/display/multi_display/displays#focus">Android docs</a>
 	 */
 	private final Map<Integer, AccessibilityNodeInfo> mKeyboardFocusNodes = new ConcurrentHashMap<>();
+
+	/*
+	    Legacy X11/RFB keysym -> Unicode code point for Cyrillic. RFB clients
+	    (e.g. noVNC) send these 0x06xx keysyms for Cyrillic, NOT the 0x01000000+
+	    Unicode range, so without this map Cyrillic input is silently dropped.
+	    Generated as the inverse of noVNC's keysymdef codepoints table.
+	 */
+	private static final Map<Integer, Integer> KEYSYM_UNICODE = new HashMap<>();
+	static {
+		KEYSYM_UNICODE.put(0x06b3, 0x0401);
+		KEYSYM_UNICODE.put(0x06b1, 0x0402);
+		KEYSYM_UNICODE.put(0x06b2, 0x0403);
+		KEYSYM_UNICODE.put(0x06b4, 0x0404);
+		KEYSYM_UNICODE.put(0x06b5, 0x0405);
+		KEYSYM_UNICODE.put(0x06b6, 0x0406);
+		KEYSYM_UNICODE.put(0x06b7, 0x0407);
+		KEYSYM_UNICODE.put(0x06b8, 0x0408);
+		KEYSYM_UNICODE.put(0x06b9, 0x0409);
+		KEYSYM_UNICODE.put(0x06ba, 0x040a);
+		KEYSYM_UNICODE.put(0x06bb, 0x040b);
+		KEYSYM_UNICODE.put(0x06bc, 0x040c);
+		KEYSYM_UNICODE.put(0x06be, 0x040e);
+		KEYSYM_UNICODE.put(0x06bf, 0x040f);
+		KEYSYM_UNICODE.put(0x06e1, 0x0410);
+		KEYSYM_UNICODE.put(0x06e2, 0x0411);
+		KEYSYM_UNICODE.put(0x06f7, 0x0412);
+		KEYSYM_UNICODE.put(0x06e7, 0x0413);
+		KEYSYM_UNICODE.put(0x06e4, 0x0414);
+		KEYSYM_UNICODE.put(0x06e5, 0x0415);
+		KEYSYM_UNICODE.put(0x06f6, 0x0416);
+		KEYSYM_UNICODE.put(0x06fa, 0x0417);
+		KEYSYM_UNICODE.put(0x06e9, 0x0418);
+		KEYSYM_UNICODE.put(0x06ea, 0x0419);
+		KEYSYM_UNICODE.put(0x06eb, 0x041a);
+		KEYSYM_UNICODE.put(0x06ec, 0x041b);
+		KEYSYM_UNICODE.put(0x06ed, 0x041c);
+		KEYSYM_UNICODE.put(0x06ee, 0x041d);
+		KEYSYM_UNICODE.put(0x06ef, 0x041e);
+		KEYSYM_UNICODE.put(0x06f0, 0x041f);
+		KEYSYM_UNICODE.put(0x06f2, 0x0420);
+		KEYSYM_UNICODE.put(0x06f3, 0x0421);
+		KEYSYM_UNICODE.put(0x06f4, 0x0422);
+		KEYSYM_UNICODE.put(0x06f5, 0x0423);
+		KEYSYM_UNICODE.put(0x06e6, 0x0424);
+		KEYSYM_UNICODE.put(0x06e8, 0x0425);
+		KEYSYM_UNICODE.put(0x06e3, 0x0426);
+		KEYSYM_UNICODE.put(0x06fe, 0x0427);
+		KEYSYM_UNICODE.put(0x06fb, 0x0428);
+		KEYSYM_UNICODE.put(0x06fd, 0x0429);
+		KEYSYM_UNICODE.put(0x06ff, 0x042a);
+		KEYSYM_UNICODE.put(0x06f9, 0x042b);
+		KEYSYM_UNICODE.put(0x06f8, 0x042c);
+		KEYSYM_UNICODE.put(0x06fc, 0x042d);
+		KEYSYM_UNICODE.put(0x06e0, 0x042e);
+		KEYSYM_UNICODE.put(0x06f1, 0x042f);
+		KEYSYM_UNICODE.put(0x06c1, 0x0430);
+		KEYSYM_UNICODE.put(0x06c2, 0x0431);
+		KEYSYM_UNICODE.put(0x06d7, 0x0432);
+		KEYSYM_UNICODE.put(0x06c7, 0x0433);
+		KEYSYM_UNICODE.put(0x06c4, 0x0434);
+		KEYSYM_UNICODE.put(0x06c5, 0x0435);
+		KEYSYM_UNICODE.put(0x06d6, 0x0436);
+		KEYSYM_UNICODE.put(0x06da, 0x0437);
+		KEYSYM_UNICODE.put(0x06c9, 0x0438);
+		KEYSYM_UNICODE.put(0x06ca, 0x0439);
+		KEYSYM_UNICODE.put(0x06cb, 0x043a);
+		KEYSYM_UNICODE.put(0x06cc, 0x043b);
+		KEYSYM_UNICODE.put(0x06cd, 0x043c);
+		KEYSYM_UNICODE.put(0x06ce, 0x043d);
+		KEYSYM_UNICODE.put(0x06cf, 0x043e);
+		KEYSYM_UNICODE.put(0x06d0, 0x043f);
+		KEYSYM_UNICODE.put(0x06d2, 0x0440);
+		KEYSYM_UNICODE.put(0x06d3, 0x0441);
+		KEYSYM_UNICODE.put(0x06d4, 0x0442);
+		KEYSYM_UNICODE.put(0x06d5, 0x0443);
+		KEYSYM_UNICODE.put(0x06c6, 0x0444);
+		KEYSYM_UNICODE.put(0x06c8, 0x0445);
+		KEYSYM_UNICODE.put(0x06c3, 0x0446);
+		KEYSYM_UNICODE.put(0x06de, 0x0447);
+		KEYSYM_UNICODE.put(0x06db, 0x0448);
+		KEYSYM_UNICODE.put(0x06dd, 0x0449);
+		KEYSYM_UNICODE.put(0x06df, 0x044a);
+		KEYSYM_UNICODE.put(0x06d9, 0x044b);
+		KEYSYM_UNICODE.put(0x06d8, 0x044c);
+		KEYSYM_UNICODE.put(0x06dc, 0x044d);
+		KEYSYM_UNICODE.put(0x06c0, 0x044e);
+		KEYSYM_UNICODE.put(0x06d1, 0x044f);
+		KEYSYM_UNICODE.put(0x06a3, 0x0451);
+		KEYSYM_UNICODE.put(0x06a1, 0x0452);
+		KEYSYM_UNICODE.put(0x06a2, 0x0453);
+		KEYSYM_UNICODE.put(0x06a4, 0x0454);
+		KEYSYM_UNICODE.put(0x06a5, 0x0455);
+		KEYSYM_UNICODE.put(0x06a6, 0x0456);
+		KEYSYM_UNICODE.put(0x06a7, 0x0457);
+		KEYSYM_UNICODE.put(0x06a8, 0x0458);
+		KEYSYM_UNICODE.put(0x06a9, 0x0459);
+		KEYSYM_UNICODE.put(0x06aa, 0x045a);
+		KEYSYM_UNICODE.put(0x06ab, 0x045b);
+		KEYSYM_UNICODE.put(0x06ac, 0x045c);
+		KEYSYM_UNICODE.put(0x06ae, 0x045e);
+		KEYSYM_UNICODE.put(0x06af, 0x045f);
+		KEYSYM_UNICODE.put(0x06bd, 0x0490);
+		KEYSYM_UNICODE.put(0x06ad, 0x0491);
+		KEYSYM_UNICODE.put(0x06b0, 0x2116);
+	}
+
+	/**
+	 * Translate an RFB keysym to a Unicode code point for text entry,
+	 * or -1 if it is not a printable-character keysym we can type.
+	 */
+	private static int keysymToUnicode(long keysym) {
+		if (keysym >= 0x20 && keysym <= 0xff)
+			return (int) keysym;                              // Latin-1 (keysym == code point)
+		Integer mapped = KEYSYM_UNICODE.get((int) keysym);
+		if (mapped != null)
+			return mapped;                                    // legacy Cyrillic keysym
+		if (keysym >= 0x01000000 && keysym <= 0x0110ffff)
+			return (int) (keysym - 0x01000000);               // RFB Unicode keysym
+		return -1;
+	}
 
 
 	@Override
@@ -736,11 +857,14 @@ public class InputService extends AccessibilityService {
 					);
 
 					/*
-						Rest of ISO-8859-1 input using KeyEvent from characters.
-						API does not allow setting meta state for these.
+						Rest of ISO-8859-1 input using KeyEvent from characters, plus
+						legacy Cyrillic keysyms and the RFB Unicode-keysym range so
+						non-Latin scripts can be typed too. API does not allow setting
+						meta state for these.
 					 */
-					if (keysym >= 0xa0 && keysym <= 0xff && down != 0) {
-						keyEvent = new KeyEvent(SystemClock.uptimeMillis(), Character.toString((char) keysym), 0, 0);
+					int charCodePoint = keysymToUnicode(keysym);
+					if (charCodePoint >= 0xa0 && down != 0) {
+						keyEvent = new KeyEvent(SystemClock.uptimeMillis(), new String(Character.toChars(charCodePoint)), 0, 0);
 					}
 
 					/*
@@ -966,9 +1090,12 @@ public class InputService extends AccessibilityService {
 			}
 
 			/*
-			    ISO-8859-1 input
+			    Printable character input: Latin-1, legacy Cyrillic keysyms and the
+			    RFB Unicode-keysym range (see keysymToUnicode). This is the path used
+			    on older devices (e.g. Android 7) that don't take the API 34+ branch.
 			 */
-			if (keysym >= 32 && keysym <= 255 && down != 0) {
+			int typedCodePoint = keysymToUnicode(keysym);
+			if (typedCodePoint >= 32 && down != 0) {
 				CharSequence currentFocusText = Objects.requireNonNull(currentFocusNode).getText();
 				// some implementations return null for empty text, work around that
 				if (currentFocusText == null)
@@ -987,7 +1114,8 @@ public class InputService extends AccessibilityService {
 					textAfterCursor = String.valueOf(currentFocusText.subSequence(cursorPos, currentFocusText.length()));
 				} catch (IndexOutOfBoundsException ignored) {
 				}
-				String newFocusText = textBeforeCursor + (char) keysym + textAfterCursor;
+				String typed = new String(Character.toChars(typedCodePoint));
+				String newFocusText = textBeforeCursor + typed + textAfterCursor;
 
 				Bundle action = new Bundle();
 				action.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, newFocusText);
