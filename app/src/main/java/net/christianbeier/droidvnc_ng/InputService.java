@@ -1000,7 +1000,7 @@ public class InputService extends AccessibilityService {
 				currentFocusNode.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT.getId(), action);
 
 				// ACTION_SET_TEXT moves cursor to the end, move cursor back to where it should be
-				setCursorPos(currentFocusNode, cursorPos > 0 ? cursorPos + 1 : 1);
+				setCursorPos(currentFocusNode, cursorPos > 0 ? cursorPos + typed.length() : typed.length());
 			}
 
 		} catch (Exception e) {
